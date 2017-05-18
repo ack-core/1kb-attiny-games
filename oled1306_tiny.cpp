@@ -1,9 +1,6 @@
 
 #include "oled1306_tiny.h"
 
-#define PORT_HI(p) (PORTB |= (1 << (p)))
-#define PORT_LO(p) (PORTB &= ~(1 << (p)))
-
 namespace oled1306 {
     namespace details {
         void send_value(unsigned char value, bool is_cmd) {
@@ -23,65 +20,30 @@ namespace oled1306 {
                 PORT_LO(D_CLK);
             }
         }
+    }
 
-        void send_cmd(unsigned char cmd) {
-            send_value(cmd, true);
-        }
+    void send_cmd(unsigned char cmd) {
+        details::send_value(cmd, true);
+    }
 
-        void send_dat(unsigned char dat) {
-            send_value(dat, false);
-        }        
+    void send_dat(unsigned char dat) {
+        details::send_value(dat, false);
     }
     
-    void draw_block(unsigned char page, unsigned char index, const char *bytes, unsigned char hcount, unsigned char vcount) {
-        details::send_cmd(0x21);
-        details::send_cmd(index);
-        details::send_cmd(index + hcount - 1);
-        details::send_cmd(0x22);
-        details::send_cmd(page);
-        details::send_cmd(page + vcount - 1);
-        
-        for (unsigned char i = 0; i < hcount * vcount; i++) {
-            details::send_dat(bytes[i]);
-        }
+    void set_rect(char p0, char p1, char i0, char i1) {
+        send_cmd(0x21);
+        send_cmd(i0);
+        send_cmd(i1);
+        send_cmd(0x22);
+        send_cmd(p0);
+        send_cmd(p1);
     }
-    
-    void init() {
-        PORT_HI(D_CLK);
-        PORT_LO(D_RES);
 
-        for (unsigned char i = 0; i < 255; i++) {
-            asm volatile("nop");
-        }
-
-        PORT_HI(D_RES);
-        
-        details::send_cmd(0xAE);
-        details::send_cmd(0xD5);
-        details::send_cmd(0x80);
-        details::send_cmd(0xA8);
-        details::send_cmd(0x3F);
-        details::send_cmd(0x20);
-        details::send_cmd(0x00);
-        details::send_cmd(0xAF);
-    }
-    
-    void shutdown() {
-        details::send_cmd(0xAE);
-    }    
-    
     void clear() {
-        details::send_cmd(0x21);
-        details::send_cmd(0);
-        details::send_cmd(127);
-        details::send_cmd(0x22);
-        details::send_cmd(0);
-        details::send_cmd(7);
+        set_rect(0, 7, 0, 127);
         
-        for (unsigned char i = 0; i < 8; i++) {
-            for (unsigned char c = 0; c < 128; c++) {
-                details::send_dat(0x00);
-            }
+        for (unsigned short i = 0; i < 8 * 128; i++) {
+            send_dat(0x00);
         }
     }
 }
